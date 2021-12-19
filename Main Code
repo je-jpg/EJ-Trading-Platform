@@ -1,0 +1,165 @@
+import yfinance as yf
+import datetime as dt
+import pandas as pd
+from pandas_datareader import data as pdr
+import quandl
+#install quandl
+import pandas_datareader as web
+import numpy as np
+import matplotlib.pyplot as plt
+
+yf.pdr_override() 
+
+#data range for dates
+
+def sent_pre():
+
+  #Description:This program performs a sentiment analysis
+#            with the use of machine learning    
+    
+        print("This is a program that uses Nasdaq Data to predict if open prices will be higher or lower overnight, to continue enter the required input or enter quit twice to confirm to stop the program")
+        start_date = input("Please enter a starting date in the format YYYY-MM-DD (latest possible date 2018-06-30): ")
+        end_date = input("Please enter an ending date in the format YYYY-MM-DD: ")
+
+        if start_date != "quit":
+        
+#import the librabries
+
+#determination of the quandl API Key
+            quandl.ApiConfig.api_key = "GKBuAzZhoiHrTBNM6HAv"
+            Ticker = ""
+            Ticker = input("Enter the stock symbol : ") 
+#import of the sentiment data
+            data = quandl.get_table("IFT/NSA", ticker = Ticker)
+#convert date to Datetime format
+            data["Date"] = pd.to_datetime(data["date"]) 
+#set Datetime as index
+            data.index = data ["Date"]
+#remove unneccesary data
+            data.drop(["ticker","exchange_cd","date","name","Date"], axis = 1, inplace = True)
+#import of price data
+            stock = web.DataReader(Ticker, data_source="yahoo", start= start_date, end= end_date)
+#define data frame to balance out amount of sentiment and price data
+            df = pd.concat([stock, data], axis = 1)
+#remove n/a data
+            df.dropna(inplace=True)
+#graph design
+            top = plt.subplot2grid((4,4), (1,0), colspan=4)
+            top.plot(df["Adj Close"])
+            plt.title("Adj Close Preis")
+            bottom = plt.subplot2grid((4,4), (3,0), rowspan=3, colspan=5)
+            bottom.bar(df.index, df["sentiment"])
+            plt.title("Sentiment")
+            plt.subplots_adjust(hspace=0.1)
+            plt.gcf().set_size_inches(16,8)
+#machine learns the connection between open and close
+            df["Label"] = np.where(df["Open"]< df["Close"], 1, 0)
+#remove close and adj close
+            final_df = df.drop(["Close","Adj Close"], axis = 1)
+#import machine learning libraries
+            from sklearn.model_selection import train_test_split
+            from sklearn.metrics import accuracy_score, classification_report
+            from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+#train the program to predict = 0,1 values(price higher or lower at open)
+            x = np.array(final_df.drop(["Label"], axis = 1))
+            y = np.array(final_df["Label"])
+            x_train, x_test, y_train, y_test = train_test_split(x,y, train_size=0.8, random_state=0)
+
+            model = LinearDiscriminantAnalysis()
+            model = model.fit(x_train, y_train)
+#prediction
+            pred = model.predict(x_test)
+#print a classification report
+            return(classification_report(y_test,pred))
+        else:
+            return("Programm has been closed")
+
+def glv_func():
+
+    #time period for GLV values
+    start = dt.datetime(2000, 1, 1)
+    pres = dt.datetime.now() 
+
+    stock=""
+
+    stock = input("Enter the stock symbol or ""quit"" to close the program: ")
+    
+    if stock != "quit":
+        print("Please find the Green Line Values for your selected stock below")
+
+
+ 
+
+        df = pdr.get_data_yahoo(stock, start, pres)
+
+        df.drop(df[df["Volume"]<1000].index, inplace=True) #gets rid of outliers, values for days with irrelugar stock trading volume
+
+        dfmonth=df.groupby(pd.Grouper(freq="M"))["High"].max()
+
+#assembles dates necessary for period
+
+        glDate=0
+  
+        latestGLV=0
+  
+        currentDate=""
+  
+        currentGLV=0
+  
+        for index, value in dfmonth.items():
+#to check whether value is higher than current GLV to set equal to current index
+            if value > currentGLV:
+                currentGLV=value
+                currentDate=index
+                counter=0
+
+            if value < currentGLV:
+                #counter checks whether 3 months have passed
+                counter=counter+1
+# statement below and above to ensure that stock is lower for 3 months
+                if counter==3 and ((index.month != pres.month) or (index.year != pres.year)): #to make sure that it is not the same month i.e. duplicate
+                    if currentGLV != latestGLV:
+                        print(currentGLV)
+
+                        glDate=currentDate
+                        latestGLV=currentGLV
+                        counter=0 #resets process and checks for next line
+
+            if latestGLV==0:
+                info_glv=stock+" has not formed a green line yet" #for companies that have not formed green line yet
+            else:
+                    info_glv=("Last Green Line: " + str(latestGLV)+" on " + str(glDate)) # for companies with green line values
+    
+        if latestGLV==0:
+            info_glv=stock+" has not formed a green line yet" 
+        else:
+            info_glv=("Last Green Line: " + str(latestGLV)+" on " + str(glDate))
+
+        return(info_glv)
+        stock = input("Enter the stock symbol : ")
+  
+    else: 
+        return("Program has been closed")
+
+# functions in use
+
+print("Welcome traders, to the EJ Trading Data Platform. Here you can find past and future data for different publicly listed companies")
+print("Past data will be presented in the form of Green Line Values")
+print("Future data will be predicted using past sentiment data in the form of news, relevant to a stock")
+   
+
+user_selection = input("Please select whether you would like to receive past (by entering P) or future data (by entering F): ")
+
+
+if user_selection == "P" or "F":
+
+
+    if user_selection == str("F"):
+            print(sent_pre())
+
+
+    elif user_selection == str("P"):
+            print(glv_func())
+    
+    else:
+        print("Error- Incorrect input")
