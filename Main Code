@@ -3,6 +3,7 @@ import datetime as dt
 import pandas as pd
 from pandas_datareader import data as pdr
 import quandl
+quandl.ApiConfig.api_key = "GKBuAzZhoiHrTBNM6HAv"
 #install quandl
 import pandas_datareader as web
 import numpy as np
@@ -17,62 +18,55 @@ def sent_pre():
   #Description:This program performs a sentiment analysis
 #            with the use of machine learning    
     
-        print("This is a program that uses Nasdaq Data to predict if open prices will be higher or lower overnight, to continue enter the required input or enter quit twice to confirm to stop the program")
-        start_date = input("Please enter a starting date in the format YYYY-MM-DD (latest possible date 2018-06-30): ")
-        end_date = input("Please enter an ending date in the format YYYY-MM-DD: ")
+    print("This is a program that uses Nasdaq Data to predict if open prices will be higher or lower overnight")
+    start_date = input("Please enter a starting date in the format YYYY-MM-DD (latest possible date 2018-06-30): ")
+    end_date = input("Please enter an ending date in the format YYYY-MM-DD: ")
+    Ticker = ""
+    Ticker = input("Please enter the stock ticker you would like to analyze: ")
+    #import of the sentiment data
+    data = quandl.get_table("IFT/NSA", ticker = Ticker)
+    #convert date to Datetime format
+    data["Date"] = pd.to_datetime(data["date"]) 
+    #set Datetime as index
+    data.index = data ["Date"]
+    #remove unneccesary data
+    data.drop(["ticker","exchange_cd","date","name","Date"], axis = 1, inplace = True)
+    #import of price data
+    stock = web.DataReader(Ticker, data_source="yahoo", start= start_date, end= end_date)
+    #define data frame to balance out amount of sentiment and price data
+    df = pd.concat([stock, data], axis = 1)
+    #remove n/a data
+    df.dropna(inplace=True)
+    #graph design
+    top = plt.subplot2grid((4,4), (1,0), colspan=4)
+    top.plot(df["Adj Close"])
+    plt.title("Adj Close Preis")
+    bottom = plt.subplot2grid((4,4), (3,0), rowspan=3, colspan=5)
+    bottom.bar(df.index, df["sentiment"])
+    plt.title("Sentiment")
+    plt.subplots_adjust(hspace=0.1)
+    plt.gcf().set_size_inches(16,8)
+    #machine learns the connection between open and close
+    df["Label"] = np.where(df["Open"]< df["Close"], 1, 0)
+    #remove close and adj close
+    final_df = df.drop(["Close","Adj Close"], axis = 1)
+    #import machine learning libraries
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import accuracy_score, classification_report
+    from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+    #train the program to predict = 0,1 values(price higher or lower at open)
+    x = np.array(final_df.drop(["Label"], axis = 1))
+    y = np.array(final_df["Label"])
+    x_train, x_test, y_train, y_test = train_test_split(x,y, train_size=0.8, random_state=0)
+    
+    model = LinearDiscriminantAnalysis()
+    model = model.fit(x_train, y_train)
+    #prediction
+    pred = model.predict(x_test)
+    #print a classification report
+    print(classification_report(y_test,pred))
 
-        if start_date != "quit":
-        
-#import the librabries
-
-#determination of the quandl API Key
-            quandl.ApiConfig.api_key = "GKBuAzZhoiHrTBNM6HAv"
-            Ticker = ""
-            Ticker = input("Enter the stock symbol : ") 
-#import of the sentiment data
-            data = quandl.get_table("IFT/NSA", ticker = Ticker)
-#convert date to Datetime format
-            data["Date"] = pd.to_datetime(data["date"]) 
-#set Datetime as index
-            data.index = data ["Date"]
-#remove unneccesary data
-            data.drop(["ticker","exchange_cd","date","name","Date"], axis = 1, inplace = True)
-#import of price data
-            stock = web.DataReader(Ticker, data_source="yahoo", start= start_date, end= end_date)
-#define data frame to balance out amount of sentiment and price data
-            df = pd.concat([stock, data], axis = 1)
-#remove n/a data
-            df.dropna(inplace=True)
-#graph design
-            top = plt.subplot2grid((4,4), (1,0), colspan=4)
-            top.plot(df["Adj Close"])
-            plt.title("Adj Close Preis")
-            bottom = plt.subplot2grid((4,4), (3,0), rowspan=3, colspan=5)
-            bottom.bar(df.index, df["sentiment"])
-            plt.title("Sentiment")
-            plt.subplots_adjust(hspace=0.1)
-            plt.gcf().set_size_inches(16,8)
-#machine learns the connection between open and close
-            df["Label"] = np.where(df["Open"]< df["Close"], 1, 0)
-#remove close and adj close
-            final_df = df.drop(["Close","Adj Close"], axis = 1)
-#import machine learning libraries
-            from sklearn.model_selection import train_test_split
-            from sklearn.metrics import accuracy_score, classification_report
-            from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-#train the program to predict = 0,1 values(price higher or lower at open)
-            x = np.array(final_df.drop(["Label"], axis = 1))
-            y = np.array(final_df["Label"])
-            x_train, x_test, y_train, y_test = train_test_split(x,y, train_size=0.8, random_state=0)
-
-            model = LinearDiscriminantAnalysis()
-            model = model.fit(x_train, y_train)
-#prediction
-            pred = model.predict(x_test)
-#print a classification report
-            return(classification_report(y_test,pred))
-        else:
-            return("Programm has been closed")
+      
 
 def glv_func():
 
@@ -140,8 +134,10 @@ def glv_func():
   
     else: 
         return("Program has been closed")
+    
+    
+  
 
-# functions in use
 
 print("Welcome traders, to the EJ Trading Data Platform. Here you can find past and future data for different publicly listed companies")
 print("Past data will be presented in the form of Green Line Values")
@@ -151,7 +147,8 @@ print("Future data will be predicted using past sentiment data in the form of ne
 user_selection = input("Please select whether you would like to receive past (by entering P) or future data (by entering F): ")
 
 
-if user_selection == "P" or "F":
+
+while user_selection == "P" or "F":
 
 
     if user_selection == str("F"):
@@ -161,5 +158,11 @@ if user_selection == "P" or "F":
     elif user_selection == str("P"):
             print(glv_func())
     
+    elif user_selection == "quit":
+        print("The program has been closed, to restart press run, thank you and see you next time!")
+        break
+
     else:
         print("Error- Incorrect input")
+        break
+        
