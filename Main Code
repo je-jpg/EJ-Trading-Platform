@@ -134,21 +134,20 @@ def glv_func():
   
     else: 
         return("Program has been closed")
-    
-    
+        
+        
   
-
 
 print("Welcome traders, to the EJ Trading Data Platform. Here you can find past and future data for different publicly listed companies")
 print("Past data will be presented in the form of Green Line Values")
 print("Future data will be predicted using past sentiment data in the form of news, relevant to a stock")
    
 
-user_selection = input("Please select whether you would like to receive past (by entering P) or future data (by entering F): ")
+user_selection = input("Please select whether you would like to receive past (by entering P) or future data (by entering F), or quit to close the program: ")
 
 
 
-while user_selection == "P" or "F":
+if user_selection == "P" or "F":
 
 
     if user_selection == str("F"):
@@ -157,12 +156,12 @@ while user_selection == "P" or "F":
 
     elif user_selection == str("P"):
             print(glv_func())
+            
     
     elif user_selection == "quit":
         print("The program has been closed, to restart press run, thank you and see you next time!")
-        break
+        
 
     else:
         print("Error- Incorrect input")
-        break
         
