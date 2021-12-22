@@ -138,9 +138,9 @@ def glv_func():
         
   
 
-print("Welcome traders, to the EJ Trading Data Platform. Here you can find past and future data for different publicly listed companies")
+print("Welcome traders to the EJ Trading Data Platform. Here you can find past and future data for different publicly listed companies")
 print("Past data will be presented in the form of Green Line Values")
-print("Future data will be predicted using past sentiment data in the form of news, relevant to a stock")
+print("Future data will be predicted using past sentiment data in the form of news relevant to a stock")
    
 
 user_selection = input("Please select whether you would like to receive past (by entering P) or future data (by entering F), or quit to close the program: ")
